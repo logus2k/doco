@@ -13,24 +13,35 @@ A self-hosted web application that converts Jupyter notebooks (`.ipynb`) and Mar
 - **Real-time progress** — WebSocket-based status updates during conversion
 - **Self-cleaning** — uploaded and output files are automatically deleted after use
 
-## Prerequisites
+## Installation
 
-- **Python 3.12+**
-- **Pandoc** — installed and available on PATH ([pandoc.org/installing](https://pandoc.org/installing.html))
-- Or **Docker** (no other dependencies needed)
+### Docker (recommended)
 
-## Quick Start (Docker)
+The easiest way to run doco is to pull the pre-built image:
+
+```bash
+docker run -d -p 8678:8678 --name doco logus2k/doco:latest
+```
+
+Then open **http://localhost:8678** in your browser.
+
+To stop and remove the container:
+
+```bash
+docker stop doco && docker rm doco
+```
+
+### Docker Compose
+
+If you prefer using the included compose setup:
 
 ```bash
 cd compose
-# Linux / macOS
-./start.sh
-
-# Windows
-start.bat
+./start.sh       # Linux / macOS
+start.bat        # Windows
 ```
 
-This creates the Docker network, builds the image, and starts the container. The app will be available at **http://localhost:8678**.
+This creates the Docker network, builds the image, and starts the container on port **8678**.
 
 To stop:
 ```bash
@@ -39,7 +50,13 @@ cd compose
 stop.bat        # Windows
 ```
 
-## Local Development
+### Run from Source
+
+**Prerequisites:**
+- Python 3.12+
+- Pandoc installed and available on PATH ([pandoc.org/installing](https://pandoc.org/installing.html))
+
+**Steps:**
 
 1. **Create a virtual environment and install dependencies:**
 
