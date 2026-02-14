@@ -1,5 +1,7 @@
 # doco
 
+![doco home](doco_home.png)
+
 A self-hosted web application that converts Jupyter notebooks (`.ipynb`) and Markdown (`.md`) files into professionally styled Word documents (`.docx`), with optional HTML and Markdown exports.
 
 ## Features
