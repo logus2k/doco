@@ -876,10 +876,10 @@ class DocumentConverter:
         
         title = self.doc_title if self.doc_title else base_name
 
-        out_html = output_dir / f"{base_name}_report.html"
-        out_md = output_dir / f"{base_name}_report.md"
-        assets_dir = f"{base_name}_report_files"
-        out_docx = output_dir / f"{base_name}_report.docx"
+        out_html = output_dir / f"{base_name}.html"
+        out_md = output_dir / f"{base_name}.md"
+        assets_dir = f"{base_name}_files"
+        out_docx = output_dir / f"{base_name}.docx"
 
         nb = nbf.read(str(notebook_path), as_version=4)
         nb_clean = self._clean_outputs(nb, keep_text=self.keep_text)

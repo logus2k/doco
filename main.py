@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import shutil
 import uuid
 import zipfile
@@ -215,11 +216,12 @@ async def start_conversion(sid, data):
             )
             print("[Backend Thread] B. Calling converter.convert()...")
             
-            # We use a unique base name for output to avoid collisions
+            # Use title + short hash for a clean, unique output name
+            short_hash = hashlib.sha256(file_id.encode()).hexdigest()[:8]
             result = converter.convert(
-                input_path, 
-                output_dir=OUTPUT_DIR, 
-                base_name=f"{file_id}_{clean_title}"
+                input_path,
+                output_dir=OUTPUT_DIR,
+                base_name=f"{clean_title}_{short_hash}"
             )
             return result
         except Exception as e:
