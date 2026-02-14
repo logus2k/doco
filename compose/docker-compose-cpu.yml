@@ -1,0 +1,24 @@
+name: doco
+
+services:
+  doco:
+    restart: unless-stopped
+    build:
+      context: ..
+      dockerfile: compose/doco.Dockerfile
+    image: logus2k/doco:latest
+    container_name: doco
+    hostname: doco
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "8678:8678"
+    networks:
+      - doco_network
+
+networks:
+  doco_network:
+    external: true
+    name: doco_network

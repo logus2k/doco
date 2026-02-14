@@ -1,0 +1,12 @@
+fastapi==0.129.0
+uvicorn==0.40.0
+python-socketio==5.16.1
+python-docx==1.2.0
+nbconvert==7.17.0
+nbformat==5.10.4
+lxml==6.0.2
+Jinja2==3.1.6
+python-multipart==0.0.22
+aiohttp==3.13.3
+traitlets==5.14.3
+markdown-it-py==4.0.0

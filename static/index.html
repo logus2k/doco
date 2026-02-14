@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>doco</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/libraries/socket.io.min.js"></script>
+</head>
+<body>
+
+    <div id="connection-status" class="connection-status disconnected">
+        <span class="status-dot"></span>
+        <span class="status-text">Disconnected</span>
+    </div>
+
+    <header class="wizard-header">
+        <h1>
+            <svg class="logo-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 3C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V8L16 3H5Z" fill="#3b82f6" stroke="#2563eb" stroke-width="1.5"/>
+                <path d="M16 3V8H21" fill="#60a5fa" stroke="#2563eb" stroke-width="1.5" stroke-linejoin="round"/>
+                <line x1="7" y1="11" x2="14" y2="11" stroke="#bfdbfe" stroke-width="1" stroke-linecap="round"/>
+                <line x1="7" y1="14" x2="17" y2="14" stroke="#bfdbfe" stroke-width="1" stroke-linecap="round"/>
+                <line x1="7" y1="17" x2="13" y2="17" stroke="#bfdbfe" stroke-width="1" stroke-linecap="round"/>
+            </svg>
+            doco
+        </h1>
+    </header>
+
+    <div class="wizard-container">
+        <!-- Wizard Card (Fixed Height) -->
+        <div class="wizard-card">
+
+            <!-- Progress Stepper (Inside Card) -->
+            <div class="stepper">
+                <div class="step active" data-step="1">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Upload</div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" data-step="2">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Document</div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" data-step="3">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Layout</div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" data-step="4">
+                    <div class="step-number">4</div>
+                    <div class="step-label">Export</div>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" data-step="5">
+                    <div class="step-number">5</div>
+                    <div class="step-label">Download</div>
+                </div>
+            </div>
+
+            <!-- Wizard Content -->
+
+            <!-- STEP 1: Upload -->
+            <div class="wizard-step active" id="step-upload">
+                <h2 class="step-title">Convert a Jupyter notebook to a Word document</h2>
+                <p class="step-subtitle">The folder must contain the notebook and its images, or a subfolder with those images</p>
+
+                <div id="upload-section">
+                    <div id="drop-zone">
+                        <div class="upload-icon">📤</div>
+                        <p class="upload-primary">Drag & drop your file here</p>
+                        <p class="upload-secondary">Supported: <code>.ipynb</code> <code>.md</code> <code>.zip</code> or folders</p>
+
+                        <input type="file" id="file-input" hidden>
+                        <input type="file" id="folder-input" hidden webkitdirectory>
+
+                        <div class="upload-actions">
+                            <button id="browse-btn" class="btn-outline">
+                                📁 Browse Files
+                            </button>
+                            <button id="browse-folder-btn" class="btn-outline">
+                                📂 Browse Folder
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="file-selected-info" class="file-selected hidden">
+                        <div class="file-info-display">
+                            <span class="file-icon">📄</span>
+                            <span id="file-name-display">No file selected</span>
+                            <button id="remove-file-btn" class="btn-remove-inline">✕</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 2: Document Options -->
+            <div class="wizard-step" id="step-document">
+                <h2 class="step-title">Document Options</h2>
+
+                <div class="form-section">
+                    <div class="form-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="opt-hide-code" checked>
+                            <span class="checkbox-custom"></span>
+                            <div>
+                                <span class="label-text">Hide Code Inputs</span>
+                                <span class="label-hint">Remove code cells from output</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="form-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="opt-keep-text">
+                            <span class="checkbox-custom"></span>
+                            <div>
+                                <span class="label-text">Keep Text Outputs</span>
+                                <span class="label-hint">Preserve text outputs from code execution</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="form-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="opt-toc" checked>
+                            <span class="checkbox-custom"></span>
+                            <div>
+                                <span class="label-text">Include Table of Contents</span>
+                                <span class="label-hint">Add TOC at the beginning of document</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-field">
+                            <label class="field-label">Paper Size</label>
+                            <select id="opt-paper-size" class="select-input">
+                                <option value="A4" selected>A4 (210 × 297 mm)</option>
+                                <option value="Letter">Letter (8.5 × 11 in)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 3: Layout & Styling -->
+            <div class="wizard-step" id="step-layout">
+                <h2 class="step-title">Layout & Styling</h2>
+
+                <div class="form-section scrollable">
+                    <!-- Header & Footer -->
+                    <div class="subsection">
+                        <h3 class="subsection-title">Header & Footer</h3>
+                        <div class="form-row-grid">
+                            <div class="form-field">
+                                <label class="field-label">Header Text</label>
+                                <input type="text" id="opt-header-text" class="text-input" placeholder="Auto (filename)">
+                            </div>
+                            <div class="form-field">
+                                <label class="field-label">Page Number</label>
+                                <select id="opt-page-pos" class="select-input">
+                                    <option value="right" selected>Right</option>
+                                    <option value="center">Center</option>
+                                    <option value="left">Left</option>
+                                </select>
+                            </div>
+                        </div>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="opt-show-page-word">
+                            <span class="checkbox-custom"></span>
+                            <span class="label-text">Show "Page" word</span>
+                        </label>
+                    </div>
+
+                    <!-- Typography -->
+                    <div class="subsection">
+                        <h3 class="subsection-title">Typography</h3>
+                        <div class="form-row-grid">
+                            <div class="form-field">
+                                <label class="field-label">Font Family</label>
+                                <select id="opt-font" class="select-input">
+                                    <option value="Aptos" selected>Aptos</option>
+                                    <option value="Arial">Arial</option>
+                                    <option value="Calibri">Calibri</option>
+                                    <option value="Cambria">Cambria</option>
+                                    <option value="Times New Roman">Times New Roman</option>
+                                </select>
+                            </div>
+                            <div class="form-field">
+                                <label class="field-label">Text Alignment</label>
+                                <select id="opt-align" class="select-input">
+                                    <option value="justify" selected>Justified</option>
+                                    <option value="left">Left Aligned</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row-grid-4">
+                            <div class="form-field">
+                                <label class="field-label">Body (pt)</label>
+                                <input type="number" id="opt-size-body" value="12" class="number-input">
+                            </div>
+                            <div class="form-field">
+                                <label class="field-label">Table (pt)</label>
+                                <input type="number" id="opt-size-table" value="11" class="number-input">
+                            </div>
+                            <div class="form-field">
+                                <label class="field-label">Code (pt)</label>
+                                <input type="number" id="opt-size-code" value="10" class="number-input">
+                            </div>
+                            <div class="form-field">
+                                <label class="field-label">Header (pt)</label>
+                                <input type="number" id="opt-size-header" value="9" class="number-input">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Layout Options -->
+                    <div class="subsection">
+                        <h3 class="subsection-title">Layout Adjustments</h3>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="opt-resize-images" checked>
+                            <span class="checkbox-custom"></span>
+                            <span class="label-text">Fit Images to Page Width</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="opt-resize-tables" checked>
+                            <span class="checkbox-custom"></span>
+                            <span class="label-text">Fit Tables to Page Width</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 4: Export Options -->
+            <div class="wizard-step" id="step-export">
+                <h2 class="step-title">Export Options</h2>
+
+                <div class="form-section">
+                    <p class="section-description">Choose additional export formats (optional)</p>
+
+                    <div class="form-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="opt-export-html">
+                            <span class="checkbox-custom"></span>
+                            <div>
+                                <span class="label-text">Export HTML Report</span>
+                                <span class="label-hint">Generate interactive HTML version</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="form-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="opt-export-md">
+                            <span class="checkbox-custom"></span>
+                            <div>
+                                <span class="label-text">Export Markdown</span>
+                                <span class="label-hint">Keep intermediate markdown file</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 5: Processing & Results -->
+            <div class="wizard-step" id="step-process">
+                <div id="config-section" class="hidden">
+                    <!-- Hidden section for compatibility -->
+                </div>
+
+                <div id="status-section">
+                    <h2 class="step-title">Converting...</h2>
+                    <div id="progress-tracker"></div>
+                </div>
+
+                <div id="result-area" class="hidden">
+                    <div class="result-success">
+                        <div class="success-icon">✅</div>
+                        <h2>Conversion Complete!</h2>
+                        <p>Your document has been successfully converted</p>
+                    </div>
+                    <div id="download-links"></div>
+                </div>
+            </div>
+
+            <!-- Wizard Navigation (Inside Card) -->
+            <div class="wizard-nav">
+                <button id="btn-back" class="btn-nav" disabled>
+                    ← Back
+                </button>
+                <button id="btn-next" class="btn-nav btn-primary" disabled>
+                    Next →
+                </button>
+                <button id="start-btn" class="btn-nav btn-primary hidden">
+                    🚀 Start Conversion
+                </button>
+                <button id="reset-btn" class="btn-nav hidden">
+                    🔄 Convert Another
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div id="settings-toggle" class="settings-toggle" title="Settings">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" stroke="#666" stroke-width="1.5"/>
+            <path d="M16.2 12.2a1.4 1.4 0 00.28 1.54l.05.05a1.7 1.7 0 11-2.4 2.4l-.05-.05a1.4 1.4 0 00-1.54-.28 1.4 1.4 0 00-.84 1.28v.14a1.7 1.7 0 11-3.4 0v-.07a1.4 1.4 0 00-.92-1.28 1.4 1.4 0 00-1.54.28l-.05.05a1.7 1.7 0 11-2.4-2.4l.05-.05a1.4 1.4 0 00.28-1.54 1.4 1.4 0 00-1.28-.84H2.3a1.7 1.7 0 110-3.4h.07a1.4 1.4 0 001.28-.92 1.4 1.4 0 00-.28-1.54l-.05-.05a1.7 1.7 0 112.4-2.4l.05.05a1.4 1.4 0 001.54.28h.07a1.4 1.4 0 00.84-1.28V2.3a1.7 1.7 0 113.4 0v.07a1.4 1.4 0 00.84 1.28 1.4 1.4 0 001.54-.28l.05-.05a1.7 1.7 0 112.4 2.4l-.05.05a1.4 1.4 0 00-.28 1.54v.07a1.4 1.4 0 001.28.84h.14a1.7 1.7 0 110 3.4h-.07a1.4 1.4 0 00-1.28.84z" stroke="#666" stroke-width="1.5"/>
+        </svg>
+    </div>
+    <div id="settings-panel" class="settings-panel hidden">
+        <div class="settings-header">Settings</div>
+        <label class="settings-checkbox">
+            <input type="checkbox" id="css-reload-toggle">
+            <span>Auto-reload CSS</span>
+        </label>
+        <div class="settings-field">
+            <label for="css-reload-interval">Interval (ms)</label>
+            <input type="number" id="css-reload-interval" value="4000" min="500" step="500" class="number-input">
+        </div>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+
+    <script type="module">
+        import CSSReloader from "./js/components/CSSReloader.js";
+        const cssReloader = new CSSReloader(4000);
+
+        const toggle = document.getElementById('settings-toggle');
+        const panel = document.getElementById('settings-panel');
+        const reloadToggle = document.getElementById('css-reload-toggle');
+        const intervalInput = document.getElementById('css-reload-interval');
+
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            panel.classList.toggle('hidden');
+        });
+
+        panel.addEventListener('click', (e) => e.stopPropagation());
+
+        document.addEventListener('click', () => {
+            if (!panel.classList.contains('hidden')) {
+                panel.classList.add('hidden');
+            }
+        });
+
+        reloadToggle.addEventListener('change', () => {
+            if (reloadToggle.checked) {
+                cssReloader.start();
+            } else {
+                cssReloader.stop();
+            }
+        });
+
+        intervalInput.addEventListener('change', () => {
+            const val = parseInt(intervalInput.value);
+            if (val >= 500) {
+                cssReloader.setInterval(val);
+            }
+        });
+    </script>
+</body>
+</html>

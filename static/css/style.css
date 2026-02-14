@@ -1,0 +1,819 @@
+/* ============================================
+   Wizard UI - Design System
+   ============================================ */
+:root {
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+    --primary-light: #dbeafe;
+    --success: #10b981;
+    --success-light: #d1fae5;
+    --bg: #f1f5f9;
+    --card-bg: #ffffff;
+    --text: #0f172a;
+    --text-secondary: #64748b;
+    --text-hint: #94a3b8;
+    --border: #e2e8f0;
+    --border-light: #f1f5f9;
+    --error: #ef4444;
+
+    --wizard-width: 680px;
+    --wizard-height: 600px;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --radius-md: 10px;
+    --shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-image: url('../images/low-contrast-linen.png');
+    background-repeat: repeat;
+    background-color: #00000011;
+    color: var(--text);
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* ============================================
+   Wizard Container
+   ============================================ */
+.wizard-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+}
+
+.wizard-header {
+    position: fixed;
+    top: 1rem;
+    left: 1.5rem;
+    z-index: 1000;
+}
+
+.wizard-header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1d1d1d;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.logo-icon {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* ============================================
+   Stepper (Inside Card)
+   ============================================ */
+.stepper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md);
+    background: var(--border-light);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    flex: 0 0 auto;
+}
+
+.step-number {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: white;
+    color: var(--text-secondary);
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.step-label {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.step.active .step-number {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.step.active .step-label {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.step.completed .step-number {
+    background: var(--success);
+    color: white;
+    border-color: var(--success);
+}
+
+.step.completed .step-label {
+    color: var(--success);
+}
+
+.step-line {
+    flex: 1;
+    height: 2px;
+    background: var(--border);
+    margin: 0 0.5rem;
+    position: relative;
+    top: -8px;
+}
+
+/* ============================================
+   Wizard Card (Fixed Size)
+   ============================================ */
+.wizard-card {
+    background: var(--card-bg);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    width: 100%;
+    max-width: var(--wizard-width);
+    height: var(--wizard-height);
+    position: relative;
+    overflow: hidden;
+}
+
+.wizard-step {
+    position: absolute;
+    top: 110px; /* Space for 20px padding + stepper + margin */
+    left: 20px;
+    right: 20px;
+    bottom: 90px; /* Space for navigation + 20px padding */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.wizard-step.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.step-title {
+    margin: 0 0 var(--spacing-lg);
+    font-size: 1.5rem;
+    color: #1d1d1d;
+    margin: 35px;
+    margin-bottom: 0.25rem;
+    text-align: center;
+    vertical-align: middle;
+    font-family: 'Roboto', sans-serif;
+}
+
+.step-subtitle {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    text-align: center;
+    margin: 0 35px 20px;
+}
+
+/* ============================================
+   Form Sections
+   ============================================ */
+.form-section {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.form-section.scrollable {
+    max-height: calc(var(--wizard-height) - 200px);
+}
+
+.form-section::-webkit-scrollbar {
+    width: 6px;
+}
+
+.form-section::-webkit-scrollbar-track {
+    background: var(--bg);
+    border-radius: 3px;
+}
+
+.form-section::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+}
+
+.form-section::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+.section-description {
+    color: var(--text-secondary);
+    margin: 0 0 var(--spacing-md);
+    font-size: 0.9rem;
+}
+
+.subsection {
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-lg);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.subsection:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.subsection-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    margin: 0 0 var(--spacing-md);
+}
+
+.form-row {
+    margin-bottom: var(--spacing-md);
+}
+
+.form-row-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.form-row-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+/* ============================================
+   Form Elements
+   ============================================ */
+.form-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.field-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 0.375rem;
+}
+
+.text-input,
+.select-input,
+.number-input {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.text-input:focus,
+.select-input:focus,
+.number-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.number-input {
+    text-align: center;
+}
+
+/* Custom Checkbox */
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    cursor: pointer;
+    padding: var(--spacing-sm);
+    border-radius: 6px;
+    transition: background 0.2s ease;
+    margin-bottom: var(--spacing-sm);
+}
+
+.checkbox-label:hover {
+    background: var(--bg);
+}
+
+.checkbox-label input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.checkbox-custom {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    position: relative;
+    transition: all 0.2s ease;
+    margin-top: 2px;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkbox-custom {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.label-text {
+    font-weight: 500;
+    color: var(--text);
+    display: block;
+}
+
+.label-hint {
+    font-size: 0.8rem;
+    color: var(--text-hint);
+    display: block;
+    margin-top: 0.125rem;
+}
+
+/* ============================================
+   Upload Zone
+   ============================================ */
+#upload-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+#drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-md);
+    padding: 2.5rem;
+    margin-bottom: 20px;
+    text-align: center;
+    transition: all 0.2s ease;
+    background: var(--bg);
+}
+
+#drop-zone.drag-over {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    transform: scale(1.02);
+}
+
+.upload-icon {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.upload-primary {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 var(--spacing-sm);
+    color: var(--text);
+}
+
+.upload-secondary {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0 0 var(--spacing-lg);
+}
+
+.upload-secondary code {
+    background: white;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    border: 1px solid var(--border);
+}
+
+.upload-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.file-selected {
+    margin-top: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--success-light);
+    border-radius: 6px;
+    border: 1px solid var(--success);
+}
+
+.file-info-display {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.file-icon {
+    font-size: 1.25rem;
+}
+
+.btn-remove-inline {
+    margin-left: auto;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: var(--error);
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-remove-inline:hover {
+    transform: rotate(90deg);
+    background: #dc2626;
+}
+
+/* ============================================
+   Progress & Results
+   ============================================ */
+#status-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.progress-step {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+}
+
+.progress-step.active {
+    background: var(--primary-light);
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.progress-step.done {
+    color: var(--success);
+}
+
+.status-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+.active .status-icon {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.done .status-icon {
+    background: var(--success);
+    border-color: var(--success);
+    color: white;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.result-success {
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.success-icon {
+    font-size: 4rem;
+}
+
+.result-success h2 {
+    margin: 0 0 var(--spacing-sm);
+    color: var(--success);
+}
+
+.result-success p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+#download-links {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-lg);
+}
+
+#download-links a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: 0.75rem;
+    background: var(--primary);
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+#download-links a:hover {
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+}
+
+/* ============================================
+   Wizard Navigation (Inside Card)
+   ============================================ */
+.wizard-nav {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: space-between;
+    padding: var(--spacing-md);
+    background: var(--border-light);
+    border-radius: var(--radius-md);
+    border-top: 1px solid var(--border);
+}
+
+.btn-nav {
+    flex: 1;
+    padding: 0.75rem var(--spacing-md);
+    border: 1px solid var(--border);
+    background: white;
+    color: var(--text);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-nav:hover:not(:disabled) {
+    background: var(--bg);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.btn-nav:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: var(--bg);
+}
+
+.btn-nav.btn-primary {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.btn-nav.btn-primary:hover:not(:disabled) {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+.btn-outline {
+    background: white;
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 0.65rem var(--spacing-md);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-outline:hover {
+    background: var(--bg);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+/* ============================================
+   Utilities
+   ============================================ */
+.hidden {
+    display: none !important;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 768px) {
+    body {
+        padding: 1rem;
+    }
+
+    :root {
+        --wizard-width: 100%;
+        --wizard-height: 560px;
+    }
+
+    .stepper {
+        padding: var(--spacing-sm);
+    }
+
+    .step-label {
+        font-size: 0.65rem;
+    }
+
+    .step-number {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
+    }
+
+    .step-line {
+        margin: 0 0.25rem;
+    }
+
+    .form-row-grid,
+    .form-row-grid-4 {
+        grid-template-columns: 1fr;
+    }
+
+    .upload-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .wizard-nav {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+}
+
+/* ============================================
+   Settings Panel
+   ============================================ */
+
+.settings-toggle {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    transition: background 0.2s;
+    z-index: 1000;
+}
+
+.settings-toggle:hover {
+    background: var(--border-light);
+}
+
+.settings-panel {
+    position: fixed;
+    bottom: 4.5rem;
+    left: 1.5rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: var(--spacing-md);
+    min-width: 220px;
+    z-index: 1000;
+}
+
+.settings-header {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text);
+    margin-bottom: var(--spacing-sm);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.settings-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text);
+    cursor: pointer;
+    margin-bottom: var(--spacing-sm);
+}
+
+.settings-field {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.settings-field label {
+    white-space: nowrap;
+}
+
+.settings-field .number-input {
+    width: 80px;
+}
+
+/* ============================================
+   Connection Status
+   ============================================ */
+
+.connection-status {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    z-index: 1000;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.connection-status.connected .status-dot {
+    background: var(--success);
+}
+
+.connection-status.connected .status-text {
+    color: var(--success);
+}
+
+.connection-status.disconnected .status-dot {
+    background: #ef4444;
+}
+
+.connection-status.disconnected .status-text {
+    color: #ef4444;
+}
