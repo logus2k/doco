@@ -308,10 +308,23 @@ class DocumentConverter:
 
         # 2. Handle TOC Cover Page
         if self.include_toc and len(doc.paragraphs) > 0:
-            cover_para = doc.add_paragraph("INSERT YOUR COVER PAGE HERE")
+            cover_para = doc.add_paragraph()
             cover_para.style = 'Normal'
-            run = cover_para.add_run()
-            run.add_break(WD_BREAK.PAGE)
+            cover_para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+            # 18 blank lines before the placeholder text (16pt to match)
+            for _ in range(18):
+                blank_run = cover_para.add_run()
+                blank_run.font.size = Pt(16)
+                blank_run.add_break()
+            # Placeholder text: 16pt, #B6B6B6, centered
+            text_run = cover_para.add_run("INSERT YOUR COVER PAGE HERE")
+            text_run.font.size = Pt(16)
+            text_run.font.color.rgb = RGBColor(0xB6, 0xB6, 0xB6)
+            # 1 blank line after the placeholder text, then page break
+            br_run = cover_para.add_run()
+            br_run.font.size = Pt(16)
+            br_run.add_break()
+            br_run.add_break(WD_BREAK.PAGE)
             doc.element.body.insert(0, cover_para._element)
 
         # 3. PASS 1: Cleanup (Iterate BACKWARDS to safely remove elements)
@@ -357,6 +370,10 @@ class DocumentConverter:
         for i, paragraph in enumerate(paragraphs):
             style_name = paragraph.style.name if paragraph.style and paragraph.style.name else ""
             text = paragraph.text.strip()
+
+            # Skip cover page paragraph — its formatting is set explicitly
+            if "INSERT YOUR COVER PAGE HERE" in text:
+                continue
             
             is_code = 'Source Code' in style_name
             is_heading = style_name.startswith('Heading')
