@@ -146,3 +146,7 @@ doco/
 | Resize Images | `true` | Fit images to page width |
 | Resize Tables | `true` | Fit tables to page width |
 | Page Number | Right | Left, Center, or Right |
+
+## License
+
+This project is licensed under the [Apache License 2.0](LICENSE).
