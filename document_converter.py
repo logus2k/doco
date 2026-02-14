@@ -273,16 +273,16 @@ class DocumentConverter:
         return '\n'.join(new_lines)
     
     def _style_captions_in_markdown(self, md_content: str) -> str:
-        """Wraps Figure captions in span tags for 10pt font size."""
+        """Wraps Figure/Table captions in span tags for 10pt font size."""
         lines = md_content.split('\n')
         new_lines = []
-        
-        # Regex to find "Figure " followed by a number
-        # e.g., "Figure 1: Description"
-        fig_pattern = re.compile(r'^(Figure\s+\d+.*)$', re.IGNORECASE)
-        
+
+        # Regex to find "Figure " or "Table " followed by a number
+        # e.g., "Figure 1: Description" or "Table 2: Summary"
+        caption_pattern = re.compile(r'^((?:Figure|Table)\s+\d+.*)$', re.IGNORECASE)
+
         for line in lines:
-            match = fig_pattern.match(line.strip())
+            match = caption_pattern.match(line.strip())
             if match:
                 # Wrap the entire line in a span with font-size: 10pt
                 # We preserve the original line content inside the span
@@ -380,32 +380,34 @@ class DocumentConverter:
 
             # --- B. Caption Styling (Fix Issue 2) ---
             # Check if this paragraph looks like a caption
-            # Regex: Starts with "Figure " followed by a digit
-            if re.match(r'^Figure\s+\d+', text, re.IGNORECASE):
+            # Regex: Starts with "Figure " or "Table " followed by a digit
+            if re.match(r'^(?:Figure|Table)\s+\d+', text, re.IGNORECASE):
 
 
 
-
-
-
-                # Check if previous paragraph contains an Image
+                # Check if previous element is an Image or a Table
                 prev_para = paragraphs[i-1] if i > 0 else None
+                prev_has_image = False
+                prev_has_table = False
                 if prev_para:
-                    # Check for image XML in previous paragraph
                     prev_has_image = len(prev_para._element.xpath('.//w:drawing')) > 0 or \
                                      len(prev_para._element.xpath('.//w:pict')) > 0
+                    # Check if a table immediately precedes this paragraph in the body
+                    prev_sibling = paragraph._element.getprevious()
+                    if prev_sibling is not None and prev_sibling.tag == qn('w:tbl'):
+                        prev_has_table = True
 
-                    if prev_has_image:
-                        # Apply Caption Style: 10pt font, 13pt space before
-                        for run in paragraph.runs:
-                            run.font.size = Pt(10)
-                            run.font.name = self.font_family
-                        
-                        # Override spacing for captions
-                        paragraph.paragraph_format.space_before = Pt(9)
-                        paragraph.paragraph_format.space_after = Pt(9)
-                        paragraph.paragraph_format.line_spacing_rule = WD_LINE_SPACING.SINGLE
-                        is_caption = True
+                if prev_has_image or prev_has_table:
+                    # Apply Caption Style: 10pt font
+                    for run in paragraph.runs:
+                        run.font.size = Pt(10)
+                        run.font.name = self.font_family
+
+                    # Override spacing for captions
+                    paragraph.paragraph_format.space_before = Pt(9)
+                    paragraph.paragraph_format.space_after = Pt(9)
+                    paragraph.paragraph_format.line_spacing_rule = WD_LINE_SPACING.SINGLE
+                    is_caption = True
             
             # --- C. Heading & Code Logic ---
             if is_heading:
@@ -695,7 +697,13 @@ class DocumentConverter:
 
             if self.resize_tables:
                 table.autofit = False
-                cast(Any, table).preferred_width = available_width
+                # Set absolute width via XML (6.475" = 9324 twips)
+                tblW = tblPr.find(qn('w:tblW'))
+                if tblW is None:
+                    tblW = OxmlElement('w:tblW')
+                    tblPr.insert(0, tblW)
+                tblW.set(qn('w:w'), '9324')
+                tblW.set(qn('w:type'), 'dxa')
 
         # 6. Resize Images (Same as before)
         if self.resize_images:
