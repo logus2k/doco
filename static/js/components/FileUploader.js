@@ -90,15 +90,17 @@ export default class FileUploader {
 
     async uploadFiles(files) {
         const formData = new FormData();
-        
-        // Find the main notebook/markdown file to tell the backend what to process
-        const mainFile = files.find(f => 
-            f.name.endsWith('.ipynb') || f.name.endsWith('.md')
-        );
-        
-        if (!mainFile) {
-            alert('No .ipynb or .md file found in selection.');
-            return;
+
+        // Skip main file check for ZIP uploads (backend extracts and finds it)
+        const isZip = files.length === 1 && files[0].name.endsWith('.zip');
+        if (!isZip) {
+            const mainFile = files.find(f =>
+                f.name.endsWith('.ipynb') || f.name.endsWith('.md')
+            );
+            if (!mainFile) {
+                alert('No .ipynb or .md file found in selection.');
+                return;
+            }
         }
 
         // Append all files
