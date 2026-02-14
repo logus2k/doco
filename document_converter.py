@@ -124,6 +124,38 @@ class DocumentConverter:
         body, _ = html_exporter.from_notebook_node(nb)
         out_path.write_text(body, encoding="utf-8")
 
+    @staticmethod
+    def _html_table_to_markdown(html: str) -> str:
+        """Convert an HTML <table> to a Markdown pipe table."""
+        from lxml.html import fromstring
+
+        doc = fromstring(html)
+        table = doc if doc.tag == 'table' else doc.find('.//table')
+        if table is None:
+            return ''
+
+        rows = []
+        for tr in table.iter('tr'):
+            cells = [c.text_content().strip() for c in tr if c.tag in ('td', 'th')]
+            if cells:
+                rows.append(cells)
+
+        if not rows:
+            return ''
+
+        num_cols = max(len(r) for r in rows)
+        for r in rows:
+            while len(r) < num_cols:
+                r.append('')
+
+        lines = []
+        lines.append('| ' + ' | '.join(rows[0]) + ' |')
+        lines.append('| ' + ' | '.join(['---'] * num_cols) + ' |')
+        for row in rows[1:]:
+            lines.append('| ' + ' | '.join(row) + ' |')
+
+        return '\n'.join(lines)
+
     def _strip_captions(self, md_content: str) -> str:
         return re.sub(r'!\[.*?\]\((.*?)\)', r'![](\1)', md_content)        
 
@@ -826,6 +858,28 @@ class DocumentConverter:
 
         nb = nbf.read(str(notebook_path), as_version=4)
         nb_clean = self._clean_outputs(nb, keep_text=self.keep_text)
+
+        # Extract DataFrame HTML tables from code cell outputs, convert to
+        # markdown pipe tables, and inject as markdown cells so that Pandoc
+        # produces real Word tables instead of plain text blocks.
+        new_cells = []
+        for cell in nb_clean.cells:
+            table_htmls = []
+            if cell.get("cell_type") == "code":
+                remaining = []
+                for out in cell.get("outputs", []):
+                    data = out.get("data", {})
+                    if "text/html" in data and "<table" in data["text/html"]:
+                        table_htmls.append(data["text/html"])
+                    else:
+                        remaining.append(out)
+                cell["outputs"] = remaining
+            new_cells.append(cell)
+            for html in table_htmls:
+                md_table = self._html_table_to_markdown(html)
+                if md_table:
+                    new_cells.append(nbf.v4.new_markdown_cell(source=md_table))
+        nb_clean.cells = new_cells
 
         result = ConversionResult()
 
