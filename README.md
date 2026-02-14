@@ -22,7 +22,7 @@ A self-hosted web application that converts Jupyter notebooks (`.ipynb`) and Mar
 The easiest way to run doco is to pull the pre-built image:
 
 ```bash
-docker run -d -p 8678:8678 --name doco logus2k/doco:latest
+docker run -d -p 8678:8678 --name doco logus2k/doco
 ```
 
 Then open **http://localhost:8678** in your browser.
