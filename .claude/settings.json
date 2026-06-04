@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la ~/env/iscte/co/src/nerf_tutorial2_v5_AC.ipynb 2>&1; echo \"---SIZE/VALID JSON---\"; python3 -c \"import json,sys; d=json.load\\(open\\('/home/logus/env/iscte/co/src/nerf_tutorial2_v5_AC.ipynb'\\)\\); print\\('cells:',len\\(d.get\\('cells',[]\\)\\),'nbformat:',d.get\\('nbformat'\\)\\)\" 2>&1)",
+      "Read(//home/logus/env/iscte/co/src/**)",
+      "Bash(curl -s -o /tmp/prod_dl.docx -w \"HTTP_STATUS:%{http_code}  downloaded_bytes:%{size_download}  time:%{time_total}s\\\\n\" \"https://logus2k.com/doco/api/download/nerf_tutorial2_v5_AC_5b323fd2.docx\")",
+      "Read(//tmp/**)",
+      "Bash(grep -n -iE \"doco|client_max_body_size\" /home/logus/env/assets/proxy_server/nginx.conf)",
+      "Read(//home/logus/env/assets/proxy_server/**)"
+    ]
+  }
+}

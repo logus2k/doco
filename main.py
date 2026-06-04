@@ -35,15 +35,6 @@ async def run_conversion(func):
     print("[Backend] Running conversion in thread pool...")
     return await loop.run_in_executor(None, func)
 
-def delete_file_task(path: Path):
-    """Helper function to delete a file safely."""
-    try:
-        if path.exists():
-            path.unlink()
-            print(f"[Cleanup] Deleted output file: {path}")
-    except Exception as e:
-        print(f"[Cleanup] Error deleting {path}: {e}")
-
 # --- Routes ---
 
 @app.get("/")
@@ -90,6 +81,13 @@ async def upload_file(files: list[UploadFile] = File(...)):
         
         try:
             with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                # Guard against Zip Slip: reject any member that would resolve
+                # outside the session directory (absolute paths or '../').
+                session_root = session_dir.resolve()
+                for member in zip_ref.namelist():
+                    target = (session_dir / member).resolve()
+                    if target != session_root and session_root not in target.parents:
+                        raise HTTPException(status_code=400, detail="Invalid ZIP file (unsafe path).")
                 zip_ref.extractall(session_dir)
         except zipfile.BadZipFile:
             raise HTTPException(status_code=400, detail="Invalid ZIP file.")
@@ -208,8 +206,8 @@ async def start_conversion(sid, data):
                 text_align=options.get('text_align', 'justify'),
                 font_family=options.get('font_family', 'Aptos'),
                 font_size_body=options.get('font_size_body', 12),
-                font_size_table=options.get('font_size_table', 11),
-                font_size_header=options.get('font_size_header', 9),
+                font_size_table=options.get('font_size_table', 10),
+                font_size_header=options.get('font_size_header', 8),
                 font_size_code=options.get('font_size_code', 10),
                 resize_images=options.get('resize_images', True),
                 resize_tables=options.get('resize_tables', True)          

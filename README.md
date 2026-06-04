@@ -139,9 +139,9 @@ doco/
 | Paper Size | A4 | A4 or Letter |
 | Font Family | Aptos | Aptos, Arial, Calibri, Cambria, Times New Roman |
 | Body Font Size | 12pt | Main text size |
-| Table Font Size | 11pt | Table cell text size |
+| Table Font Size | 10pt | Table cell text size |
 | Code Font Size | 10pt | Code block text size |
-| Header Font Size | 9pt | Page header/footer text size |
+| Header Font Size | 8pt | Page header/footer text size |
 | Text Alignment | Justify | Justify or Left |
 | Resize Images | `true` | Fit images to page width |
 | Resize Tables | `true` | Fit tables to page width |

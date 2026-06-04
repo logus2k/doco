@@ -8,12 +8,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast, Any
 
 from docx import Document
-from docx.shared import Inches, Mm, Pt, Emu
+from docx.shared import Inches, Mm, Pt, Emu, RGBColor
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT, WD_BREAK, WD_LINE_SPACING
 from docx.oxml.parser import OxmlElement
 from docx.oxml.ns import qn
 from docx.styles.style import ParagraphStyle
-from docx.shared import Inches, Mm, Pt, Emu, RGBColor
 
 _HAS_NB = False
 try:
@@ -71,8 +70,8 @@ class DocumentConverter:
     text_align: str = "justify"
     font_family: str = "Aptos"
     font_size_body: int = 12
-    font_size_table: int = 11
-    font_size_header: int = 9
+    font_size_table: int = 10
+    font_size_header: int = 8
     font_size_code: int = 10
     resize_images: bool = True
     resize_tables: bool = True
@@ -136,7 +135,10 @@ class DocumentConverter:
 
         rows = []
         for tr in table.iter('tr'):
-            cells = [c.text_content().strip() for c in tr if c.tag in ('td', 'th')]
+            # Escape pipes and flatten newlines so cell text can't break the
+            # generated Markdown pipe table.
+            cells = [c.text_content().strip().replace('|', r'\|').replace('\n', ' ')
+                     for c in tr if c.tag in ('td', 'th')]
             if cells:
                 rows.append(cells)
 
@@ -157,26 +159,31 @@ class DocumentConverter:
         return '\n'.join(lines)
 
     def _strip_captions(self, md_content: str) -> str:
-        return re.sub(r'!\[.*?\]\((.*?)\)', r'![](\1)', md_content)        
+        return re.sub(r'!\[.*?\]\((.*?)\)', r'![](\1)', md_content)
 
-    def _export_markdown(self, nb: nbf.NotebookNode, out_path: Path, assets_dir: str) -> None:
-        self._require_nb()
-        c = Config(); c.MarkdownExporter.exclude_input_prompt = True; c.MarkdownExporter.exclude_output_prompt = True
-        if self.hide_code: c.MarkdownExporter.exclude_input = True
-        resources = {"output_files_dir": assets_dir}
-        md_exporter = MarkdownExporter(config=c)
-        body, resources = md_exporter.from_notebook_node(nb, resources=resources)
-        
-        # Strip captions
-        body = self._strip_captions(body)
-        body = self._strip_hrs_after_headers(body)
-        
-        out_path.write_text(body, encoding="utf-8")
-        for fname, data in resources.get("outputs", {}).items():
-            img_path = out_path.parent / fname; img_path.parent.mkdir(parents=True, exist_ok=True)
-            img_path.write_bytes(data)
+    def _strip_embedded_media(self, md_content: str) -> str:
+        """Remove embedded <video>/<audio> HTML (typically base64 data URIs).
 
-    def _set_section_properties(self, section, title: str):
+        Notebook cells that display a video/audio clip embed it as a
+        ``data:video/...;base64,...`` URI on a single multi-hundred-KB line.
+        Such media cannot render in a DOCX, and the giant line makes Pandoc
+        parse pathologically slowly — effectively hanging on large notebooks
+        (see _markdown_to_docx, which now also guards with a timeout).
+        """
+        # Drop whole <video>/<audio> blocks first (keeps surrounding text clean).
+        md_content = re.sub(r'<video\b[^>]*>.*?</video>', '', md_content,
+                            flags=re.IGNORECASE | re.DOTALL)
+        md_content = re.sub(r'<audio\b[^>]*>.*?</audio>', '', md_content,
+                            flags=re.IGNORECASE | re.DOTALL)
+        # Belt-and-suspenders: remove any leftover line carrying an embedded
+        # media data URI (covers malformed/unclosed tags).
+        md_content = '\n'.join(
+            line for line in md_content.split('\n')
+            if 'data:video' not in line and 'data:audio' not in line
+        )
+        return md_content
+
+    def _set_section_properties(self, section):
         """Helper to set margins and page size for a section."""
         # 1. Margins (in inches)
         section.top_margin = Inches(0.8)
@@ -377,6 +384,7 @@ class DocumentConverter:
             
             is_code = 'Source Code' in style_name
             is_heading = style_name.startswith('Heading')
+            is_quote = 'Block Text' in style_name or 'Quote' in style_name
             pPr = paragraph._p.find(qn('w:pPr'))
             has_numPr = pPr is not None and pPr.find(qn('w:numPr')) is not None
             is_list = 'List' in style_name or 'Compact' in style_name or has_numPr
@@ -431,37 +439,6 @@ class DocumentConverter:
                 paragraph.paragraph_format.space_before = Pt(12)
                 paragraph.paragraph_format.space_after = Pt(6)
                 paragraph.paragraph_format.page_break_before = (style_name == 'Heading 1')
-
-            # --- TOC Heading: Style like Heading 1 ---
-            for sdt in doc.element.body.iterchildren(qn('w:sdt')):
-                sdtContent = sdt.find(qn('w:sdtContent'))
-                if sdtContent is not None:
-                    for p in sdtContent.iterchildren(qn('w:p')):
-                        pPr = p.find(qn('w:pPr'))
-                        if pPr is not None:
-                            pStyle = pPr.find(qn('w:pStyle'))
-                            if pStyle is not None and pStyle.get(qn('w:val')) == 'TOCHeading':
-                                # Set 6pt space after
-                                spacing = pPr.find(qn('w:spacing'))
-                                if spacing is None:
-                                    spacing = OxmlElement('w:spacing')
-                                    pPr.append(spacing)
-                                spacing.set(qn('w:after'), '120')  # 6pt = 120 twips
-                                for r in p.iter(qn('w:r')):
-                                    rPr = r.find(qn('w:rPr'))
-                                    if rPr is None:
-                                        rPr = OxmlElement('w:rPr')
-                                        r.insert(0, rPr)
-                                    sz = rPr.find(qn('w:sz'))
-                                    if sz is None:
-                                        sz = OxmlElement('w:sz')
-                                        rPr.append(sz)
-                                    sz.set(qn('w:val'), '36')  # 18pt = 36 half-points
-                                    color = rPr.find(qn('w:color'))
-                                    if color is None:
-                                        color = OxmlElement('w:color')
-                                        rPr.append(color)
-                                    color.set(qn('w:val'), '4F81BD')  # accent_blue
 
             if is_code:
                 def _adj_is_code(idx):
@@ -522,6 +499,79 @@ class DocumentConverter:
                 ind.set(qn('w:right'), '180')
                 pPr_el.append(ind)
 
+            # --- Blockquote Styling ---
+            # Mirrors the Markdown viewer's CSS:
+            #   border-left: 3px solid #fdcfb3;
+            #   margin: 0.8em 0;
+            #   padding: 0.2em 1em;
+            #   color: #555;
+            #   background-color: #fffbf2;
+            if is_quote:
+                def _adj_is_quote(idx):
+                    if idx < 0 or idx >= len(paragraphs):
+                        return False
+                    s = paragraphs[idx].style
+                    sn = s.name if s and s.name else ''
+                    return 'Block Text' in sn or 'Quote' in sn
+                is_first_quote = not _adj_is_quote(i - 1)
+                is_last_quote = not _adj_is_quote(i + 1)
+
+                # Spacing: 0.8em outside block (~9pt), tight inside
+                paragraph.paragraph_format.space_before = Pt(9) if is_first_quote else Pt(0)
+                paragraph.paragraph_format.space_after = Pt(9) if is_last_quote else Pt(0)
+
+                pPr_el = paragraph._p.get_or_add_pPr()
+
+                # Background #fffbf2
+                for old_shd in pPr_el.findall(qn('w:shd')):
+                    pPr_el.remove(old_shd)
+                shd = OxmlElement('w:shd')
+                shd.set(qn('w:val'), 'clear')
+                shd.set(qn('w:color'), 'auto')
+                shd.set(qn('w:fill'), 'FFFBF2')
+                pPr_el.append(shd)
+
+                # Borders: left accent bar (#fdcfb3, 3pt wide) + invisible
+                # borders on other sides to create padding (0.2em / 1em).
+                for old_bdr in pPr_el.findall(qn('w:pBdr')):
+                    pPr_el.remove(old_bdr)
+                pBdr = OxmlElement('w:pBdr')
+                left = OxmlElement('w:left')
+                left.set(qn('w:val'), 'single')
+                left.set(qn('w:sz'), '24')     # 24 eighths of a point = 3pt
+                left.set(qn('w:space'), '12')  # 12pt ≈ 1em inset between bar and text
+                left.set(qn('w:color'), 'FDCFB3')
+                pBdr.append(left)
+                right = OxmlElement('w:right')
+                right.set(qn('w:val'), 'none')
+                right.set(qn('w:sz'), '0')
+                right.set(qn('w:space'), '12')
+                right.set(qn('w:color'), 'auto')
+                pBdr.append(right)
+                if is_first_quote:
+                    top = OxmlElement('w:top')
+                    top.set(qn('w:val'), 'none')
+                    top.set(qn('w:sz'), '0')
+                    top.set(qn('w:space'), '3')  # ~0.2em top inset
+                    top.set(qn('w:color'), 'auto')
+                    pBdr.append(top)
+                if is_last_quote:
+                    bottom = OxmlElement('w:bottom')
+                    bottom.set(qn('w:val'), 'none')
+                    bottom.set(qn('w:sz'), '0')
+                    bottom.set(qn('w:space'), '3')
+                    bottom.set(qn('w:color'), 'auto')
+                    pBdr.append(bottom)
+                pPr_el.append(pBdr)
+
+                # Left indent so the accent bar aligns with body margin
+                for old_ind in pPr_el.findall(qn('w:ind')):
+                    pPr_el.remove(old_ind)
+                ind = OxmlElement('w:ind')
+                ind.set(qn('w:left'), '0')
+                ind.set(qn('w:right'), '0')
+                pPr_el.append(ind)
+
             # --- List Styling ---
             if is_list:
                 paragraph.paragraph_format.space_before = Pt(0)
@@ -540,6 +590,8 @@ class DocumentConverter:
             # --- D. Alignment & Font ---
             if is_code:
                 paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+            elif is_quote:
+                paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
             elif has_image:
                 paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
             else:
@@ -547,11 +599,11 @@ class DocumentConverter:
                     paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY
                 else:
                     paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
-            
+
             for run in paragraph.runs:
                 if not is_code:
                     run.font.name = self.font_family
-                
+
                 if is_code:
                     run.font.size = Pt(self.font_size_code)
                 elif is_heading:
@@ -559,9 +611,42 @@ class DocumentConverter:
                         run.font.size = Pt(18)
                 elif not is_caption:
                     run.font.size = Pt(self.font_size_body)
-                
+
                 if is_heading:
                     run.font.color.rgb = accent_blue
+                elif is_quote:
+                    run.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+
+        # --- TOC Heading: Style like Heading 1 (runs once, document-wide) ---
+        for sdt in doc.element.body.iterchildren(qn('w:sdt')):
+            sdtContent = sdt.find(qn('w:sdtContent'))
+            if sdtContent is not None:
+                for p in sdtContent.iterchildren(qn('w:p')):
+                    pPr = p.find(qn('w:pPr'))
+                    if pPr is not None:
+                        pStyle = pPr.find(qn('w:pStyle'))
+                        if pStyle is not None and pStyle.get(qn('w:val')) == 'TOCHeading':
+                            # Set 6pt space after
+                            spacing = pPr.find(qn('w:spacing'))
+                            if spacing is None:
+                                spacing = OxmlElement('w:spacing')
+                                pPr.append(spacing)
+                            spacing.set(qn('w:after'), '120')  # 6pt = 120 twips
+                            for r in p.iter(qn('w:r')):
+                                rPr = r.find(qn('w:rPr'))
+                                if rPr is None:
+                                    rPr = OxmlElement('w:rPr')
+                                    r.insert(0, rPr)
+                                sz = rPr.find(qn('w:sz'))
+                                if sz is None:
+                                    sz = OxmlElement('w:sz')
+                                    rPr.append(sz)
+                                sz.set(qn('w:val'), '36')  # 18pt = 36 half-points
+                                color = rPr.find(qn('w:color'))
+                                if color is None:
+                                    color = OxmlElement('w:color')
+                                    rPr.append(color)
+                                color.set(qn('w:val'), '4F81BD')  # accent_blue
 
         # 5. Set numbering definition indents (controls visual list indent)
         # Progressive indentation per level:
@@ -743,7 +828,7 @@ class DocumentConverter:
         header_content = self.header_text if self.header_text else title
 
         for section in doc.sections:
-            self._set_section_properties(section, title)
+            self._set_section_properties(section)
             section.different_first_page_header_footer = True
 
             # --- HEADER ---
@@ -815,14 +900,6 @@ class DocumentConverter:
         pBdr.append(border)
         pPr.append(pBdr)
 
-    def _has_visible_border(self, paragraph):
-        """Check if paragraph has a border set (used to detect HR lines)."""
-        pPr = paragraph._p.find(qn('w:pPr'))
-        if pPr is not None:
-            pBdr = pPr.find(qn('w:pBdr'))
-            return pBdr is not None
-        return False        
-
     def _markdown_to_docx(self, md_path: Path, docx_path: Path, title: str, source_dir: Path | None = None) -> None:
         """Convert Markdown to DOCX via system pandoc."""
         self._require_pandoc()
@@ -853,7 +930,16 @@ class DocumentConverter:
         if self.template:
             cmd.append(f"--reference-doc={self.template}")
         
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        # Guard against pathological inputs (e.g. huge embedded data URIs) that
+        # can make Pandoc spin forever — without this the worker thread hangs
+        # and no completion/error is ever emitted to the client.
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+        except subprocess.TimeoutExpired:
+            raise ConversionError(
+                "pandoc timed out after 180s (the document may contain very "
+                "large embedded media)."
+            )
         if result.returncode != 0:
             raise ConversionError(
                 f"pandoc failed (exit {result.returncode}): {result.stderr.strip()}"
@@ -923,6 +1009,9 @@ class DocumentConverter:
         md_exporter = MarkdownExporter(config=c)
         md_body, resources = md_exporter.from_notebook_node(nb_clean, resources=resources)
 
+        # Discard embedded video/audio (base64 data URIs) — they can't render
+        # in a DOCX and hang Pandoc on large notebooks.
+        md_body = self._strip_embedded_media(md_body)
         # Apply Strip Captions
         md_body = self._strip_captions(md_body)
         # Apply HR Removal
@@ -952,13 +1041,13 @@ class DocumentConverter:
     def _process_markdown(self, markdown_path: Path, base_name: str, output_dir: Path) -> ConversionResult:
         title = self.doc_title if self.doc_title else base_name
         out_docx = output_dir / f"{base_name}.docx"
-        
-        # Pass the markdown's parent directory as source_dir
-        self._markdown_to_docx(markdown_path, out_docx, title=title, source_dir=markdown_path.parent)
 
-        # Read content
+        # Read and preprocess the source markdown (a single conversion below —
+        # converting the raw file first would be wasted work).
         md_content = markdown_path.read_text(encoding="utf-8")
-        
+
+        # Discard embedded video/audio (base64 data URIs)
+        md_content = self._strip_embedded_media(md_content)
         # STRIP CAPTIONS
         md_content = self._strip_captions(md_content)
         # Strip HRs
@@ -974,29 +1063,3 @@ class DocumentConverter:
         temp_md.unlink()
         
         return ConversionResult(docx=out_docx)
-    
-    def _generate_toc_markdown(self, md_content: str) -> str:
-        """Generates a Markdown list of links based on headers."""
-        import re
-        lines = md_content.split('\n')
-        toc_lines = ["## Table of Contents\n"]
-        
-        # Regex to find Markdown headers: # Header, ## Header, etc.
-        header_pattern = re.compile(r'^(#{1,3})\s+(.*)')
-        
-        for line in lines:
-            match = header_pattern.match(line)
-            if match:
-                level = len(match.group(1))
-                title = match.group(2).strip()
-                
-                # Create anchor link (Pandoc auto-generates these IDs)
-                # Pandoc removes punctuation, lowercases, and replaces spaces with hyphens
-                anchor = re.sub(r'[^\w\s-]', '', title).lower().replace(' ', '-')
-                
-                indent = "  " * (level - 1)
-                toc_lines.append(f"{indent}- [{title}](#{anchor})")
-        
-        if len(toc_lines) > 1:
-            return "\n".join(toc_lines) + "\n\n"
-        return ""
